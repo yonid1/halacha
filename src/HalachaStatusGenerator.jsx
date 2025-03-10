@@ -139,33 +139,48 @@ function HalachaStatusGenerator() {
     setIsLoading(true);
     setError(null);
     try {
-      // מבדילים בין 'הלכות שבת' לשאר הקטגוריות
       const docRef =
         category === 'הלכות שבת'
           ? doc(db, 'halachot', `${category}_${partNumber}`)
           : doc(db, 'halachot', category);
-
+  
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const allHalachot = docSnap.data().halachot || [];
-        // מסננים הלכות שעדיין לא נקראו
-        const unreadHalachot = allHalachot.filter((halacha) => !halacha.read);
-
-        // אם ההלכה הראשונה ארוכה מ-300 תווים, מציגים רק אותה
+        // מסננים הלכות שלא נקראו
+        const unreadHalachot = allHalachot.filter((h) => !h.read);
+  
+        // בודקים את ההלכה הראשונה
         const firstHalacha = unreadHalachot[currentHalachaIndex];
+  
+        // אם ההלכה הראשונה ארוכה מ-300 תווים => מציגים רק אותה
         if (firstHalacha && firstHalacha.text.length > 300) {
           setHalachot([firstHalacha]);
         } else {
-          // אחרת, מציגים שתי הלכות בכל פעם
-          const currentHalachot = unreadHalachot.slice(
-            currentHalachaIndex,
-            currentHalachaIndex + 2
-          );
-
-          if (currentHalachot.length === 0) {
+          // אחרת, מתחילים לאסוף הלכות
+          let collected = [];
+          let totalChars = 0;
+          let i = currentHalachaIndex;
+  
+          // קודם כל לוקחים 2 הלכות (אם קיימות)
+          while (i < unreadHalachot.length && collected.length < 2) {
+            collected.push(unreadHalachot[i]);
+            totalChars += unreadHalachot[i].text.length;
+            i++;
+          }
+  
+          // אם אחרי 2 הלכות עדיין מתחת ל-250 תווים => ממשיכים להוסיף
+          while (i < unreadHalachot.length && totalChars < 250) {
+            collected.push(unreadHalachot[i]);
+            totalChars += unreadHalachot[i].text.length;
+            i++;
+          }
+  
+          // אם לא הצלחנו להוסיף שום הלכה => מציגים שגיאה
+          if (collected.length === 0) {
             setError('לא נמצאו הלכות בקטגוריה זו');
           } else {
-            setHalachot(currentHalachot);
+            setHalachot(collected);
           }
         }
       } else {
