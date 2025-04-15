@@ -4,7 +4,6 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { HDate } from '@hebcal/core';
 import ori from './ori.png';
 
-// הגדרת הקטגוריות
 const CATEGORIES = {
   'הלכות שבת': { id: 'shabbat', parts: 2 },
   'הלכות ברכות': { id: 'brachot', parts: 1 },
@@ -16,15 +15,9 @@ const CATEGORIES = {
   'הלכות תעניות': { id: 'taaniyot', parts: 1 }
 };
 
-// פונקציות עזר לעבודה עם תאריך עברי
 const HebrewUtils = {
-  // שמות ימי השבוע בעברית
   days: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'],
 
-  /**
-   * ממירה מספר יום (1-30) למחרוזת בעברית
-   * דוגמה: 29 -> 'כט', 15 -> 'טו'
-   */
   gematriyaDay: (day) => {
     if (day === 15) return 'טו';
     if (day === 16) return 'טז';
@@ -58,7 +51,6 @@ const HebrewUtils = {
     return hebrewTens + hebrewOnes;
   },
 
-  // המרת שנה לכתיב עברי (לדוגמה: 5785 -> ה'תשפה)
   yearToHebrewString: (year) => {
     const hebrewLetters = {
       1: 'א', 2: 'ב', 3: 'ג', 4: 'ד', 5: 'ה',
@@ -76,33 +68,19 @@ const HebrewUtils = {
     return `ה'תש${tensLetter}${onesLetter}`;
   },
 
-  // ממיר שם חודש לועזי (מלוח עברי) לשם עברי
   monthNameToHebrew: (monthName) => {
     const monthMap = {
-      Nisan: 'ניסן',
-      Iyyar: 'אייר',
-      Sivan: 'סיון',
-      Tamuz: 'תמוז',
-      Av: 'אב',
-      Elul: 'אלול',
-      Tishrei: 'תשרי',
-      Cheshvan: 'חשון',
-      Kislev: 'כסלו',
-      Tevet: 'טבת',
-      "Sh'vat": 'שבט',
-      Adar: 'אדר'
+      Nisan: 'ניסן', Iyyar: 'אייר', Sivan: 'סיון', Tamuz: 'תמוז', Av: 'אב', Elul: 'אלול',
+      Tishrei: 'תשרי', Cheshvan: 'חשון', Kislev: 'כסלו', Tevet: 'טבת', "Sh'vat": 'שבט', Adar: 'אדר'
     };
     return monthMap[monthName] || monthName;
   }
 };
 
-// פונקציה לחישוב גודל פונט דינמי לפי אורך הטקסט
 const calculateFontSize = (texts) => {
   const baseSize = 18;
   const maxLength = Math.max(...texts.map((text) => text.length));
-  return maxLength <= 200
-    ? baseSize
-    : Math.max(16, baseSize - Math.floor((maxLength - 200) / 20));
+  return maxLength <= 200 ? baseSize : Math.max(16, baseSize - Math.floor((maxLength - 200) / 20));
 };
 
 function HalachaStatusGenerator() {
@@ -112,8 +90,8 @@ function HalachaStatusGenerator() {
   const [currentHalachaIndex, setCurrentHalachaIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [stepSize, setStepSize] = useState(2);
 
-  // הגדרת תאריך עברי כברירת מחדל
   const [hebrewDate, setHebrewDate] = useState(() => {
     const hdate = new HDate();
     return {
@@ -122,7 +100,6 @@ function HalachaStatusGenerator() {
     };
   });
 
-  // עדכון התאריך העברי כל דקה
   useEffect(() => {
     const timer = setInterval(() => {
       const hdate = new HDate();
@@ -134,7 +111,6 @@ function HalachaStatusGenerator() {
     return () => clearInterval(timer);
   }, []);
 
-  // טעינת ההלכות מ-Firestore
   const loadHalachot = async () => {
     setIsLoading(true);
     setError(null);
@@ -143,40 +119,32 @@ function HalachaStatusGenerator() {
         category === 'הלכות שבת'
           ? doc(db, 'halachot', `${category}_${partNumber}`)
           : doc(db, 'halachot', category);
-  
+
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const allHalachot = docSnap.data().halachot || [];
-        // מסננים הלכות שלא נקראו
         const unreadHalachot = allHalachot.filter((h) => !h.read);
-  
-        // בודקים את ההלכה הראשונה
+
         const firstHalacha = unreadHalachot[currentHalachaIndex];
-  
-        // אם ההלכה הראשונה ארוכה מ-300 תווים => מציגים רק אותה
         if (firstHalacha && firstHalacha.text.length > 300) {
           setHalachot([firstHalacha]);
         } else {
-          // אחרת, מתחילים לאסוף הלכות
           let collected = [];
           let totalChars = 0;
           let i = currentHalachaIndex;
-  
-          // קודם כל לוקחים 2 הלכות (אם קיימות)
+
           while (i < unreadHalachot.length && collected.length < 2) {
             collected.push(unreadHalachot[i]);
             totalChars += unreadHalachot[i].text.length;
             i++;
           }
-  
-          // אם אחרי 2 הלכות עדיין מתחת ל-250 תווים => ממשיכים להוסיף
+
           while (i < unreadHalachot.length && totalChars < 250) {
             collected.push(unreadHalachot[i]);
             totalChars += unreadHalachot[i].text.length;
             i++;
           }
-  
-          // אם לא הצלחנו להוסיף שום הלכה => מציגים שגיאה
+
           if (collected.length === 0) {
             setError('לא נמצאו הלכות בקטגוריה זו');
           } else {
@@ -194,7 +162,6 @@ function HalachaStatusGenerator() {
     }
   };
 
-  // סימון הלכות כנקראו
   const markAsRead = async (halachaIds) => {
     try {
       const docRef =
@@ -211,35 +178,24 @@ function HalachaStatusGenerator() {
             : halacha
         );
         await updateDoc(docRef, { halachot: updatedHalachot });
-        console.log('ההלכות סומנו כנקראות');
       }
     } catch (err) {
       console.error('שגיאה בעדכון ההלכות:', err);
     }
   };
 
-  // הורדה כתמונה + סימון כנקראו
   const handleDownload = async () => {
     try {
-      // קודם נסמן כנקראו
       const halachaIds = halachot.map((halacha) => halacha.id);
       await markAsRead(halachaIds);
 
-      // משתמשים ב-html2canvas כדי לצלם את האלמנט כקנבס
       const html2canvas = (await import('html2canvas')).default;
       const cardElement = document.getElementById('halacha-card');
-      if (!cardElement) {
-        console.error('אלמנט הכרטיס לא נמצא');
-        return;
-      }
+      if (!cardElement) return;
 
-      // יוצרים צילום של האלמנט
-      const canvas = await html2canvas(cardElement, {
-        useCORS: true,
-      });
+      const canvas = await html2canvas(cardElement, { useCORS: true });
       const dataUrl = canvas.toDataURL('image/png');
 
-      // יוצרים קישור הורדה
       const link = document.createElement('a');
       link.download = 'halacha.png';
       link.href = dataUrl;
@@ -252,81 +208,44 @@ function HalachaStatusGenerator() {
     }
   };
 
-  // טעינת הלכות נוספות (מעבר הלאה ברשימה)
   const loadNextHalachot = () => {
-    setCurrentHalachaIndex((prev) => prev + 2);
+    setCurrentHalachaIndex((prev) => prev + stepSize);
   };
 
-  // חישוב גודל הפונט בהתאם לאורך הטקסט
-  const fontSize = useMemo(
-    () => calculateFontSize(halachot.map((halacha) => halacha.text)),
-    [halachot]
-  );
+  const loadPreviousHalachot = () => {
+    setCurrentHalachaIndex((prev) => Math.max(prev - stepSize, 0));
+  };
 
-  // נטען את ההלכות בכל פעם שמשתנה קטגוריה, חלק, או אינדקס
+  const fontSize = useMemo(() => calculateFontSize(halachot.map((h) => h.text)), [halachot]);
+
   useEffect(() => {
     loadHalachot();
   }, [category, partNumber, currentHalachaIndex]);
 
   return (
     <div style={{ padding: '20px', margin: '0 auto', direction: 'rtl' }}>
-      {/* בחירת קטגוריה וחלק (רק לשבת) */}
       <div style={{ marginBottom: '20px' }}>
-        <select
-          value={category}
-          onChange={(e) => {
-            setCategory(e.target.value);
-            setCurrentHalachaIndex(0);
-          }}
-          style={{ padding: '8px', marginRight: '10px' }}
-        >
+        <select value={category} onChange={(e) => { setCategory(e.target.value); setCurrentHalachaIndex(0); }} style={{ padding: '8px', marginRight: '10px' }}>
           {Object.keys(CATEGORIES).map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
+            <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
 
         {category === 'הלכות שבת' && (
-          <select
-            value={partNumber}
-            onChange={(e) => {
-              setPartNumber(Number(e.target.value));
-              setCurrentHalachaIndex(0);
-            }}
-            style={{ padding: '8px' }}
-          >
+          <select value={partNumber} onChange={(e) => { setPartNumber(Number(e.target.value)); setCurrentHalachaIndex(0); }} style={{ padding: '8px' }}>
             {[...Array(CATEGORIES[category].parts)].map((_, index) => (
-              <option key={index + 1} value={index + 1}>
-                {`חלק ${HebrewUtils.gematriyaDay(index + 1)}`}
-              </option>
+              <option key={index + 1} value={index + 1}>{`חלק ${HebrewUtils.gematriyaDay(index + 1)}`}</option>
             ))}
           </select>
         )}
       </div>
 
-      {/* כרטיס ההלכה שעליו נעשה צילום */}
-      <div
-        id="halacha-card"
-        style={{
-          width: '420px',
-          height: '750px',
-          margin: '0 auto',
-          backgroundColor: '#FFEFD5',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'left  bottom',
-          backgroundSize: '200px',
-          backgroundImage: `url(${ori})`,
-          padding: '20px',
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          color: 'black',
-          fontFamily: "'David Libre', serif",
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          overflow: 'hidden',
-        }}
-      >
+      <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+        <input type="number" min="1" value={stepSize} onChange={(e) => setStepSize(Math.max(Number(e.target.value), 1))} style={{ padding: '8px', width: '80px', marginLeft: '10px' }} />
+        <span style={{ marginRight: '10px' }}>מספר הלכות לקידום או חזרה</span>
+      </div>
+
+      <div id="halacha-card" style={{ width: '420px', height: '750px', margin: '0 auto', backgroundColor: '#FFEFD5', backgroundRepeat: 'no-repeat', backgroundPosition: 'left  bottom', backgroundSize: '200px', backgroundImage: `url(${ori})`, padding: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', color: 'black', fontFamily: "'David Libre', serif", boxShadow: '0 2px 4px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
         {isLoading ? (
           <div>טוען הלכות...</div>
         ) : error ? (
@@ -334,80 +253,20 @@ function HalachaStatusGenerator() {
         ) : (
           <>
             <div style={{ flex: 1 }}>
-              <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>
-                {/* כותרת: יום בשבוע + תאריך עברי + שם הקטגוריה */}
-                {hebrewDate.dayOfWeek}, {hebrewDate.hebrewDate}
-                <br />
-                {category}
-              </h2>
+              <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>{hebrewDate.dayOfWeek}, {hebrewDate.hebrewDate}<br />{category}</h2>
               {halachot.map((halacha) => (
-                <p
-                  key={halacha.id}
-                  style={{
-                    fontSize: `${fontSize}px`,
-                    lineHeight: '1.6',
-                    marginBottom: '15px',
-                    textAlign: 'justify',
-                  }}
-                >
-                  {halacha.text}
-                </p>
+                <p key={halacha.id} style={{ fontSize: `${fontSize}px`, lineHeight: '1.6', marginBottom: '15px', textAlign: 'justify' }}>{halacha.text}</p>
               ))}
             </div>
-            <div
-              style={{
-                borderTop: '1px solid #ccc',
-                paddingTop: '10px',
-                marginTop: 'auto',
-                textAlign: 'center',
-                fontSize: '28px',
-                fontWeight: 'bold',
-                color: '#c00',
-                letterSpacing: '1px',
-              }}
-            >
-              לעילוי נשמת אורי בן עינב הי"ד
-            </div>
+            <div style={{ borderTop: '1px solid #ccc', paddingTop: '10px', marginTop: 'auto', textAlign: 'center', fontSize: '28px', fontWeight: 'bold', color: '#c00', letterSpacing: '1px' }}>לעילוי נשמת אורי בן עינב הי"ד</div>
           </>
         )}
       </div>
 
-      {/* כפתורים */}
-      <div
-        style={{
-          textAlign: 'center',
-          marginTop: '20px',
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '10px',
-        }}
-      >
-        <button
-          onClick={handleDownload}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
-        >
-          הורד כתמונה
-        </button>
-        <button
-          onClick={loadNextHalachot}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#4CAF50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
-        >
-          הלכות הבאות
-        </button>
+      <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+        <button onClick={loadPreviousHalachot} style={{ padding: '10px 20px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }} disabled={currentHalachaIndex === 0}>הלכות קודמות</button>
+        <button onClick={handleDownload} style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הורד כתמונה</button>
+        <button onClick={loadNextHalachot} style={{ padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הלכות הבאות</button>
       </div>
     </div>
   );
