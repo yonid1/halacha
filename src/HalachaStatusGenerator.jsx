@@ -91,6 +91,17 @@ function HalachaStatusGenerator() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stepSize, setStepSize] = useState(2);
+  const [cardScale, setCardScale] = useState(1);
+
+  useEffect(() => {
+    const compute = () => {
+      const available = window.innerWidth - 20;
+      setCardScale(Math.min(1, available / 420));
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, []);
 
   const [hebrewDate, setHebrewDate] = useState(() => {
     const hdate = new HDate();
@@ -184,16 +195,16 @@ function HalachaStatusGenerator() {
     }
   };
 
-  const handleDownload = async () => {
+  const downloadCardAsImage = async () => {
+    const html2canvas = (await import('html2canvas')).default;
+    const cardElement = document.getElementById('halacha-card');
+    if (!cardElement) return;
+
+    const originalTransform = cardElement.style.transform;
+    cardElement.style.transform = 'none';
+
     try {
-      const halachaIds = halachot.map((halacha) => halacha.id);
-      await markAsRead(halachaIds);
-
-      const html2canvas = (await import('html2canvas')).default;
-      const cardElement = document.getElementById('halacha-card');
-      if (!cardElement) return;
-
-      const canvas = await html2canvas(cardElement, { useCORS: true });
+      const canvas = await html2canvas(cardElement, { useCORS: true, scale: 2 });
 
       const blob = await new Promise((resolve, reject) => {
         canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob returned null'))), 'image/png');
@@ -207,8 +218,26 @@ function HalachaStatusGenerator() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+    } finally {
+      cardElement.style.transform = originalTransform;
+    }
+  };
 
+  const handleDownload = async () => {
+    try {
+      const halachaIds = halachot.map((halacha) => halacha.id);
+      await markAsRead(halachaIds);
+      await downloadCardAsImage();
       alert('ההלכות סומנו כנקראו והתמונה הורדה בהצלחה.');
+    } catch (error) {
+      console.error('שגיאה בהורדה כתמונה:', error);
+      alert('אירעה שגיאה בהמרה להורדה כתמונה');
+    }
+  };
+
+  const handleDownloadOnly = async () => {
+    try {
+      await downloadCardAsImage();
     } catch (error) {
       console.error('שגיאה בהורדה כתמונה:', error);
       alert('אירעה שגיאה בהמרה להורדה כתמונה');
@@ -252,27 +281,30 @@ function HalachaStatusGenerator() {
         <span style={{ marginRight: '10px' }}>מספר הלכות לקידום או חזרה</span>
       </div>
 
-      <div id="halacha-card" style={{ width: '420px', height: '750px', margin: '0 auto', backgroundColor: '#FFEFD5', backgroundRepeat: 'no-repeat', backgroundPosition: 'left  bottom', backgroundSize: '200px', backgroundImage: `url(${ori})`, padding: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', color: 'black', fontFamily: "'David Libre', serif", boxShadow: '0 2px 4px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
-        {isLoading ? (
-          <div>טוען הלכות...</div>
-        ) : error ? (
-          <div style={{ color: 'red' }}>{error}</div>
-        ) : (
-          <>
-            <div style={{ flex: 1 }}>
-              <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>{hebrewDate.dayOfWeek}, {hebrewDate.hebrewDate}<br />{category}</h2>
-              {halachot.map((halacha) => (
-                <p key={halacha.id} style={{ fontSize: `${fontSize}px`, lineHeight: '1.6', marginBottom: '15px', textAlign: 'justify' }}>{halacha.text}</p>
-              ))}
-            </div>
-            <div style={{ borderTop: '1px solid #ccc', paddingTop: '10px', marginTop: 'auto', textAlign: 'center', fontSize: '28px', fontWeight: 'bold', color: '#c00', letterSpacing: '1px' }}>לעילוי נשמת אורי בן עינב הי"ד</div>
-          </>
-        )}
+      <div style={{ width: `${420 * cardScale}px`, height: `${750 * cardScale}px`, margin: '0 auto' }}>
+        <div id="halacha-card" style={{ width: '420px', height: '750px', transform: `scale(${cardScale})`, transformOrigin: 'top right', backgroundColor: '#FFEFD5', backgroundRepeat: 'no-repeat', backgroundPosition: 'left  bottom', backgroundSize: '200px', backgroundImage: `url(${ori})`, padding: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', color: 'black', fontFamily: "'David Libre', serif", boxShadow: '0 2px 4px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+          {isLoading ? (
+            <div>טוען הלכות...</div>
+          ) : error ? (
+            <div style={{ color: 'red' }}>{error}</div>
+          ) : (
+            <>
+              <div style={{ flex: 1 }}>
+                <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>{hebrewDate.dayOfWeek}, {hebrewDate.hebrewDate}<br />{category}</h2>
+                {halachot.map((halacha) => (
+                  <p key={halacha.id} style={{ fontSize: `${fontSize}px`, lineHeight: '1.6', marginBottom: '15px', textAlign: 'justify' }}>{halacha.text}</p>
+                ))}
+              </div>
+              <div style={{ borderTop: '1px solid #ccc', paddingTop: '10px', marginTop: 'auto', textAlign: 'center', fontSize: '28px', fontWeight: 'bold', color: '#c00', letterSpacing: '1px' }}>לעילוי נשמת אורי בן עינב הי"ד</div>
+            </>
+          )}
+        </div>
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+      <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '10px' }}>
         <button onClick={loadPreviousHalachot} style={{ padding: '10px 20px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }} disabled={currentHalachaIndex === 0}>הלכות קודמות</button>
-        <button onClick={handleDownload} style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הורד כתמונה</button>
+        <button onClick={handleDownload} style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הורד וסמן כנקרא</button>
+        <button onClick={handleDownloadOnly} style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הורד בלבד</button>
         <button onClick={loadNextHalachot} style={{ padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הלכות הבאות</button>
       </div>
     </div>
