@@ -194,12 +194,19 @@ function HalachaStatusGenerator() {
       if (!cardElement) return;
 
       const canvas = await html2canvas(cardElement, { useCORS: true });
-      const dataUrl = canvas.toDataURL('image/png');
 
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob returned null'))), 'image/png');
+      });
+
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = 'halacha.png';
-      link.href = dataUrl;
+      link.href = url;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
       alert('ההלכות סומנו כנקראו והתמונה הורדה בהצלחה.');
     } catch (error) {
