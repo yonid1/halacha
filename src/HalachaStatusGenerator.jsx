@@ -91,6 +91,7 @@ function HalachaStatusGenerator() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stepSize, setStepSize] = useState(2);
+  const [halachotCount, setHalachotCount] = useState(2);
   const [cardScale, setCardScale] = useState(1);
 
   useEffect(() => {
@@ -136,31 +137,12 @@ function HalachaStatusGenerator() {
         const allHalachot = docSnap.data().halachot || [];
         const unreadHalachot = allHalachot.filter((h) => !h.read);
 
-        const firstHalacha = unreadHalachot[currentHalachaIndex];
-        if (firstHalacha && firstHalacha.text.length > 300) {
-          setHalachot([firstHalacha]);
+        const collected = unreadHalachot.slice(currentHalachaIndex, currentHalachaIndex + halachotCount);
+
+        if (collected.length === 0) {
+          setError('לא נמצאו הלכות בקטגוריה זו');
         } else {
-          let collected = [];
-          let totalChars = 0;
-          let i = currentHalachaIndex;
-
-          while (i < unreadHalachot.length && collected.length < 2) {
-            collected.push(unreadHalachot[i]);
-            totalChars += unreadHalachot[i].text.length;
-            i++;
-          }
-
-          while (i < unreadHalachot.length && totalChars < 250) {
-            collected.push(unreadHalachot[i]);
-            totalChars += unreadHalachot[i].text.length;
-            i++;
-          }
-
-          if (collected.length === 0) {
-            setError('לא נמצאו הלכות בקטגוריה זו');
-          } else {
-            setHalachot(collected);
-          }
+          setHalachot(collected);
         }
       } else {
         setError('לא נמצאו הלכות בקטגוריה זו');
@@ -256,7 +238,7 @@ function HalachaStatusGenerator() {
 
   useEffect(() => {
     loadHalachot();
-  }, [category, partNumber, currentHalachaIndex]);
+  }, [category, partNumber, currentHalachaIndex, halachotCount]);
 
   return (
     <div style={{ padding: '20px', margin: '0 auto', direction: 'rtl' }}>
@@ -274,6 +256,11 @@ function HalachaStatusGenerator() {
             ))}
           </select>
         )}
+      </div>
+
+      <div style={{ marginBottom: '10px', textAlign: 'center' }}>
+        <input type="number" min="1" value={halachotCount} onChange={(e) => setHalachotCount(Math.max(Number(e.target.value), 1))} style={{ padding: '8px', width: '80px', marginLeft: '10px' }} />
+        <span style={{ marginRight: '10px' }}>מספר הלכות להצגה בכרטיס</span>
       </div>
 
       <div style={{ marginBottom: '20px', textAlign: 'center' }}>
