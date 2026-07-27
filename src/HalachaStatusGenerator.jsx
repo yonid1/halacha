@@ -258,14 +258,18 @@ function HalachaStatusGenerator() {
         )}
       </div>
 
-      <div style={{ marginBottom: '10px', textAlign: 'center' }}>
-        <input type="number" min="1" value={halachotCount} onChange={(e) => setHalachotCount(Math.max(Number(e.target.value), 1))} style={{ padding: '8px', width: '80px', marginLeft: '10px' }} />
-        <span style={{ marginRight: '10px' }}>מספר הלכות להצגה בכרטיס</span>
+      <div style={{ marginBottom: '10px', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+        <span>מספר הלכות להצגה בכרטיס:</span>
+        <button onClick={() => setHalachotCount((c) => Math.max(c - 1, 1))} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>−</button>
+        <span style={{ minWidth: '24px', textAlign: 'center', fontWeight: 'bold' }}>{halachotCount}</span>
+        <button onClick={() => setHalachotCount((c) => c + 1)} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>+</button>
       </div>
 
-      <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-        <input type="number" min="1" value={stepSize} onChange={(e) => setStepSize(Math.max(Number(e.target.value), 1))} style={{ padding: '8px', width: '80px', marginLeft: '10px' }} />
-        <span style={{ marginRight: '10px' }}>מספר הלכות לקידום או חזרה</span>
+      <div style={{ marginBottom: '20px', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+        <span>מספר הלכות לקידום או חזרה:</span>
+        <button onClick={() => setStepSize((s) => Math.max(s - 1, 1))} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>−</button>
+        <span style={{ minWidth: '24px', textAlign: 'center', fontWeight: 'bold' }}>{stepSize}</span>
+        <button onClick={() => setStepSize((s) => s + 1)} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>+</button>
       </div>
 
       <div style={{ width: `${420 * cardScale}px`, height: `${750 * cardScale}px`, margin: '0 auto' }}>
