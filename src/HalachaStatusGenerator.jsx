@@ -86,6 +86,7 @@ const calculateFontSize = (texts) => {
 function HalachaStatusGenerator() {
   const [category, setCategory] = useState('הלכות חנוכה');
   const [partNumber, setPartNumber] = useState(1);
+  const [viewMode, setViewMode] = useState('unread');
   const [halachot, setHalachot] = useState([]);
   const [currentHalachaIndex, setCurrentHalachaIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -135,17 +136,28 @@ function HalachaStatusGenerator() {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const allHalachot = docSnap.data().halachot || [];
-        const unreadHalachot = allHalachot.filter((h) => !h.read);
+        const filteredHalachot =
+          viewMode === 'unread'
+            ? allHalachot.filter((h) => !h.read)
+            : allHalachot.filter((h) => h.read);
 
-        const collected = unreadHalachot.slice(currentHalachaIndex, currentHalachaIndex + halachotCount);
+        const collected = filteredHalachot.slice(currentHalachaIndex, currentHalachaIndex + halachotCount);
 
         if (collected.length === 0) {
-          setError('לא נמצאו הלכות בקטגוריה זו');
+          setError(
+            viewMode === 'unread'
+              ? 'לא נמצאו הלכות בקטגוריה זו'
+              : 'לא נמצאו הלכות שנקראו בקטגוריה זו'
+          );
         } else {
           setHalachot(collected);
         }
       } else {
-        setError('לא נמצאו הלכות בקטגוריה זו');
+        setError(
+          viewMode === 'unread'
+            ? 'לא נמצאו הלכות בקטגוריה זו'
+            : 'לא נמצאו הלכות שנקראו בקטגוריה זו'
+        );
       }
     } catch (err) {
       setError('שגיאה בטעינת ההלכות');
@@ -207,10 +219,15 @@ function HalachaStatusGenerator() {
 
   const handleDownload = async () => {
     try {
-      const halachaIds = halachot.map((halacha) => halacha.id);
-      await markAsRead(halachaIds);
-      await downloadCardAsImage();
-      alert('ההלכות סומנו כנקראו והתמונה הורדה בהצלחה.');
+      if (viewMode === 'unread') {
+        const halachaIds = halachot.map((halacha) => halacha.id);
+        await markAsRead(halachaIds);
+        await downloadCardAsImage();
+        alert('ההלכות סומנו כנקראו והתמונה הורדה בהצלחה.');
+      } else {
+        await downloadCardAsImage();
+        alert('התמונה הורדה בהצלחה.');
+      }
     } catch (error) {
       console.error('שגיאה בהורדה כתמונה:', error);
       alert('אירעה שגיאה בהמרה להורדה כתמונה');
@@ -238,10 +255,46 @@ function HalachaStatusGenerator() {
 
   useEffect(() => {
     loadHalachot();
-  }, [category, partNumber, currentHalachaIndex, halachotCount]);
+  }, [category, partNumber, currentHalachaIndex, halachotCount, viewMode]);
+
+  const switchViewMode = (mode) => {
+    setViewMode(mode);
+    setCurrentHalachaIndex(0);
+  };
 
   return (
     <div style={{ padding: '20px', margin: '0 auto', direction: 'rtl' }}>
+      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+        <button
+          onClick={() => switchViewMode('unread')}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: viewMode === 'unread' ? '#007bff' : '#e9ecef',
+            color: viewMode === 'unread' ? 'white' : '#333',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontWeight: viewMode === 'unread' ? 'bold' : 'normal'
+          }}
+        >
+          הלכות חדשות
+        </button>
+        <button
+          onClick={() => switchViewMode('read')}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: viewMode === 'read' ? '#007bff' : '#e9ecef',
+            color: viewMode === 'read' ? 'white' : '#333',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontWeight: viewMode === 'read' ? 'bold' : 'normal'
+          }}
+        >
+          הלכות שנקראו
+        </button>
+      </div>
+
       <div style={{ marginBottom: '20px' }}>
         <select value={category} onChange={(e) => { setCategory(e.target.value); setCurrentHalachaIndex(0); }} style={{ padding: '8px', marginRight: '10px' }}>
           {Object.keys(CATEGORIES).map((cat) => (
