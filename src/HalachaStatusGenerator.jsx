@@ -93,6 +93,7 @@ function HalachaStatusGenerator() {
   const [error, setError] = useState(null);
   const [stepSize, setStepSize] = useState(2);
   const [halachotCount, setHalachotCount] = useState(2);
+  const [stripChars, setStripChars] = useState(0);
   const [cardScale, setCardScale] = useState(1);
 
   useEffect(() => {
@@ -251,6 +252,11 @@ function HalachaStatusGenerator() {
     setCurrentHalachaIndex((prev) => Math.max(prev - stepSize, 0));
   };
 
+  const processText = (text) => {
+    if (stripChars === 0) return text;
+    return text.substring(stripChars).replace(/^[.\s]+/, '');
+  };
+
   const fontSize = useMemo(() => calculateFontSize(halachot.map((h) => h.text)), [halachot]);
 
   useEffect(() => {
@@ -318,6 +324,13 @@ function HalachaStatusGenerator() {
         <button onClick={() => setHalachotCount((c) => c + 1)} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>+</button>
       </div>
 
+      <div style={{ marginBottom: '10px', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+        <span>אותיות סעיף למחיקה מתחילת הלכה:</span>
+        <button onClick={() => setStripChars((c) => Math.max(c - 1, 0))} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>−</button>
+        <span style={{ minWidth: '24px', textAlign: 'center', fontWeight: 'bold' }}>{stripChars}</span>
+        <button onClick={() => setStripChars((c) => Math.min(c + 1, 3))} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>+</button>
+      </div>
+
       <div style={{ marginBottom: '20px', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
         <span>מספר הלכות לקידום או חזרה:</span>
         <button onClick={() => setStepSize((s) => Math.max(s - 1, 1))} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>−</button>
@@ -336,7 +349,7 @@ function HalachaStatusGenerator() {
               <div style={{ flex: 1 }}>
                 <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>{hebrewDate.dayOfWeek}, {hebrewDate.hebrewDate}<br />{category}</h2>
                 {halachot.map((halacha) => (
-                  <p key={halacha.id} style={{ fontSize: `${fontSize}px`, lineHeight: '1.6', marginBottom: '15px', textAlign: 'justify' }}>{halacha.text}</p>
+                  <p key={halacha.id} style={{ fontSize: `${fontSize}px`, lineHeight: '1.6', marginBottom: '15px', textAlign: 'justify' }}>{processText(halacha.text)}</p>
                 ))}
               </div>
               <div style={{ borderTop: '1px solid #ccc', paddingTop: '10px', marginTop: 'auto', textAlign: 'center', fontSize: '28px', fontWeight: 'bold', color: '#c00', letterSpacing: '1px' }}>לעילוי נשמת אורי בן עינב הי"ד</div>
