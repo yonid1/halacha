@@ -83,6 +83,26 @@ const calculateFontSize = (texts) => {
   return maxLength <= 200 ? baseSize : Math.max(16, baseSize - Math.floor((maxLength - 200) / 20));
 };
 
+const stepperButtonStyle = {
+  width: '28px', height: '28px', border: '1px solid #ccc', borderRadius: '4px',
+  backgroundColor: '#fff', cursor: 'pointer', fontSize: '16px', lineHeight: 1,
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+};
+
+function Stepper({ label, value, onDec, onInc, suffix }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '6px 10px', backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '6px' }}>
+      <span style={{ fontSize: '13px', color: '#333' }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <button onClick={onDec} style={stepperButtonStyle}>−</button>
+        <span style={{ minWidth: '28px', textAlign: 'center', fontWeight: 'bold', fontSize: '14px' }}>{value}</span>
+        <button onClick={onInc} style={stepperButtonStyle}>+</button>
+        {suffix && <span style={{ color: '#888', fontSize: '12px', minWidth: '38px' }}>{suffix}</span>}
+      </div>
+    </div>
+  );
+}
+
 function HalachaStatusGenerator() {
   const [category, setCategory] = useState('הלכות חנוכה');
   const [partNumber, setPartNumber] = useState(1);
@@ -270,81 +290,79 @@ function HalachaStatusGenerator() {
   };
 
   return (
-    <div style={{ padding: '20px', margin: '0 auto', direction: 'rtl' }}>
-      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
-        <button
-          onClick={() => switchViewMode('unread')}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: viewMode === 'unread' ? '#007bff' : '#e9ecef',
-            color: viewMode === 'unread' ? 'white' : '#333',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: viewMode === 'unread' ? 'bold' : 'normal'
-          }}
-        >
-          הלכות חדשות
-        </button>
-        <button
-          onClick={() => switchViewMode('read')}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: viewMode === 'read' ? '#007bff' : '#e9ecef',
-            color: viewMode === 'read' ? 'white' : '#333',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: viewMode === 'read' ? 'bold' : 'normal'
-          }}
-        >
-          הלכות שנקראו
-        </button>
-      </div>
+    <div style={{ padding: '16px', margin: '0 auto', direction: 'rtl', maxWidth: '640px' }}>
+      <div style={{ backgroundColor: '#f8f9fa', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+          <button
+            onClick={() => switchViewMode('unread')}
+            style={{
+              flex: 1, padding: '8px 12px',
+              backgroundColor: viewMode === 'unread' ? '#007bff' : '#fff',
+              color: viewMode === 'unread' ? 'white' : '#333',
+              border: '1px solid ' + (viewMode === 'unread' ? '#007bff' : '#ccc'),
+              borderRadius: '6px', cursor: 'pointer',
+              fontWeight: viewMode === 'unread' ? 'bold' : 'normal', fontSize: '14px'
+            }}
+          >
+            הלכות חדשות
+          </button>
+          <button
+            onClick={() => switchViewMode('read')}
+            style={{
+              flex: 1, padding: '8px 12px',
+              backgroundColor: viewMode === 'read' ? '#007bff' : '#fff',
+              color: viewMode === 'read' ? 'white' : '#333',
+              border: '1px solid ' + (viewMode === 'read' ? '#007bff' : '#ccc'),
+              borderRadius: '6px', cursor: 'pointer',
+              fontWeight: viewMode === 'read' ? 'bold' : 'normal', fontSize: '14px'
+            }}
+          >
+            הלכות שנקראו
+          </button>
+        </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <select value={category} onChange={(e) => { setCategory(e.target.value); setCurrentHalachaIndex(0); }} style={{ padding: '8px', marginRight: '10px' }}>
-          {Object.keys(CATEGORIES).map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
-
-        {category === 'הלכות שבת' && (
-          <select value={partNumber} onChange={(e) => { setPartNumber(Number(e.target.value)); setCurrentHalachaIndex(0); }} style={{ padding: '8px' }}>
-            {[...Array(CATEGORIES[category].parts)].map((_, index) => (
-              <option key={index + 1} value={index + 1}>{`חלק ${HebrewUtils.gematriyaDay(index + 1)}`}</option>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+          <select value={category} onChange={(e) => { setCategory(e.target.value); setCurrentHalachaIndex(0); }} style={{ flex: 1, padding: '8px', border: '1px solid #ccc', borderRadius: '6px', backgroundColor: '#fff', fontSize: '14px' }}>
+            {Object.keys(CATEGORIES).map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
-        )}
-      </div>
+          {category === 'הלכות שבת' && (
+            <select value={partNumber} onChange={(e) => { setPartNumber(Number(e.target.value)); setCurrentHalachaIndex(0); }} style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '6px', backgroundColor: '#fff', fontSize: '14px' }}>
+              {[...Array(CATEGORIES[category].parts)].map((_, index) => (
+                <option key={index + 1} value={index + 1}>{`חלק ${HebrewUtils.gematriyaDay(index + 1)}`}</option>
+              ))}
+            </select>
+          )}
+        </div>
 
-      <div style={{ marginBottom: '10px', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-        <span>מספר הלכות להצגה בכרטיס:</span>
-        <button onClick={() => setHalachotCount((c) => Math.max(c - 1, 1))} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>−</button>
-        <span style={{ minWidth: '24px', textAlign: 'center', fontWeight: 'bold' }}>{halachotCount}</span>
-        <button onClick={() => setHalachotCount((c) => c + 1)} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>+</button>
-      </div>
-
-      <div style={{ marginBottom: '10px', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-        <span>אותיות סעיף למחיקה מתחילת הלכה:</span>
-        <button onClick={() => setStripChars((c) => Math.max(c - 1, 0))} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>−</button>
-        <span style={{ minWidth: '24px', textAlign: 'center', fontWeight: 'bold' }}>{stripChars}</span>
-        <button onClick={() => setStripChars((c) => Math.min(c + 1, 3))} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>+</button>
-      </div>
-
-      <div style={{ marginBottom: '10px', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-        <span>גודל פונט (התאמה ידנית):</span>
-        <button onClick={() => setFontSizeOffset((o) => o - 1)} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>−</button>
-        <span style={{ minWidth: '36px', textAlign: 'center', fontWeight: 'bold' }}>{fontSizeOffset > 0 ? `+${fontSizeOffset}` : fontSizeOffset}</span>
-        <button onClick={() => setFontSizeOffset((o) => o + 1)} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>+</button>
-        <span style={{ color: '#888', fontSize: '13px' }}>({fontSize}px)</span>
-      </div>
-
-      <div style={{ marginBottom: '20px', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-        <span>מספר הלכות לקידום או חזרה:</span>
-        <button onClick={() => setStepSize((s) => Math.max(s - 1, 1))} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>−</button>
-        <span style={{ minWidth: '24px', textAlign: 'center', fontWeight: 'bold' }}>{stepSize}</span>
-        <button onClick={() => setStepSize((s) => s + 1)} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>+</button>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px' }}>
+          <Stepper
+            label="הלכות בכרטיס"
+            value={halachotCount}
+            onDec={() => setHalachotCount((c) => Math.max(c - 1, 1))}
+            onInc={() => setHalachotCount((c) => c + 1)}
+          />
+          <Stepper
+            label="קידום / חזרה"
+            value={stepSize}
+            onDec={() => setStepSize((s) => Math.max(s - 1, 1))}
+            onInc={() => setStepSize((s) => s + 1)}
+          />
+          <Stepper
+            label="מחיקת אות סעיף"
+            value={stripChars}
+            onDec={() => setStripChars((c) => Math.max(c - 1, 0))}
+            onInc={() => setStripChars((c) => Math.min(c + 1, 3))}
+          />
+          <Stepper
+            label="גודל פונט"
+            value={fontSizeOffset > 0 ? `+${fontSizeOffset}` : fontSizeOffset}
+            onDec={() => setFontSizeOffset((o) => o - 1)}
+            onInc={() => setFontSizeOffset((o) => o + 1)}
+            suffix={`${fontSize}px`}
+          />
+        </div>
       </div>
 
       <div style={{ width: `${420 * cardScale}px`, height: `${750 * cardScale}px`, margin: '0 auto' }}>
