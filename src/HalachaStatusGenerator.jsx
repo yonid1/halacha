@@ -94,6 +94,7 @@ function HalachaStatusGenerator() {
   const [stepSize, setStepSize] = useState(2);
   const [halachotCount, setHalachotCount] = useState(2);
   const [stripChars, setStripChars] = useState(0);
+  const [fontSizeOffset, setFontSizeOffset] = useState(0);
   const [cardScale, setCardScale] = useState(1);
 
   useEffect(() => {
@@ -257,7 +258,7 @@ function HalachaStatusGenerator() {
     return text.substring(stripChars).replace(/^[.\s]+/, '');
   };
 
-  const fontSize = useMemo(() => calculateFontSize(halachot.map((h) => h.text)), [halachot]);
+  const fontSize = useMemo(() => calculateFontSize(halachot.map((h) => h.text)) + fontSizeOffset, [halachot, fontSizeOffset]);
 
   useEffect(() => {
     loadHalachot();
@@ -329,6 +330,14 @@ function HalachaStatusGenerator() {
         <button onClick={() => setStripChars((c) => Math.max(c - 1, 0))} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>−</button>
         <span style={{ minWidth: '24px', textAlign: 'center', fontWeight: 'bold' }}>{stripChars}</span>
         <button onClick={() => setStripChars((c) => Math.min(c + 1, 3))} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>+</button>
+      </div>
+
+      <div style={{ marginBottom: '10px', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+        <span>גודל פונט (התאמה ידנית):</span>
+        <button onClick={() => setFontSizeOffset((o) => o - 1)} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>−</button>
+        <span style={{ minWidth: '36px', textAlign: 'center', fontWeight: 'bold' }}>{fontSizeOffset > 0 ? `+${fontSizeOffset}` : fontSizeOffset}</span>
+        <button onClick={() => setFontSizeOffset((o) => o + 1)} style={{ width: '32px', height: '32px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>+</button>
+        <span style={{ color: '#888', fontSize: '13px' }}>({fontSize}px)</span>
       </div>
 
       <div style={{ marginBottom: '20px', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
