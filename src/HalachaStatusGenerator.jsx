@@ -544,13 +544,17 @@ function HalachaStatusGenerator() {
         </div>
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '8px' }}>
-        <button onClick={loadPreviousHalachot10} disabled={currentHalachaIndex === 0} style={{ padding: '10px 14px', backgroundColor: '#c62828', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', opacity: currentHalachaIndex === 0 ? 0.5 : 1 }}>10«</button>
-        <button onClick={loadPreviousHalachot} disabled={currentHalachaIndex === 0} style={{ padding: '10px 20px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', opacity: currentHalachaIndex === 0 ? 0.5 : 1 }}>הלכות קודמות</button>
+      <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', opacity: currentHalachaIndex === 0 ? 0.5 : 1 }}>
+          <button onClick={loadPreviousHalachot10} disabled={currentHalachaIndex === 0} style={{ padding: '10px 12px', backgroundColor: '#c62828', color: 'white', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '13px' }}>10«</button>
+          <button onClick={loadPreviousHalachot} disabled={currentHalachaIndex === 0} style={{ padding: '10px 16px', backgroundColor: '#f44336', color: 'white', border: 'none', cursor: 'pointer', fontSize: '14px' }}>הלכות קודמות</button>
+        </div>
         <button onClick={handleDownload} style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הורד וסמן כנקרא</button>
         <button onClick={handleDownloadOnly} style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הורד בלבד</button>
-        <button onClick={loadNextHalachot} style={{ padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הלכות הבאות</button>
-        <button onClick={loadNextHalachot10} style={{ padding: '10px 14px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>»10</button>
+        <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden' }}>
+          <button onClick={loadNextHalachot} style={{ padding: '10px 16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', cursor: 'pointer', fontSize: '14px' }}>הלכות הבאות</button>
+          <button onClick={loadNextHalachot10} style={{ padding: '10px 12px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRight: '1px solid rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '13px' }}>»10</button>
+        </div>
       </div>
     </div>
   );
