@@ -397,8 +397,6 @@ function HalachaStatusGenerator() {
 
   const loadNextHalachot = () => setCurrentHalachaIndex((prev) => prev + stepSize);
   const loadPreviousHalachot = () => setCurrentHalachaIndex((prev) => Math.max(prev - stepSize, 0));
-  const loadNextHalachot10 = () => setCurrentHalachaIndex((prev) => prev + 10);
-  const loadPreviousHalachot10 = () => setCurrentHalachaIndex((prev) => Math.max(prev - 10, 0));
 
   const processText = (text) => {
     if (stripChars === 0) return text;
@@ -548,17 +546,11 @@ function HalachaStatusGenerator() {
         </div>
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-        <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', opacity: currentHalachaIndex === 0 ? 0.5 : 1 }}>
-          <button onClick={loadPreviousHalachot10} disabled={currentHalachaIndex === 0} style={{ padding: '10px 12px', backgroundColor: '#c62828', color: 'white', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '13px' }}>10«</button>
-          <button onClick={loadPreviousHalachot} disabled={currentHalachaIndex === 0} style={{ padding: '10px 16px', backgroundColor: '#f44336', color: 'white', border: 'none', cursor: 'pointer', fontSize: '14px' }}>הלכות קודמות</button>
-        </div>
+      <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '8px' }}>
+        <button onClick={loadPreviousHalachot} disabled={currentHalachaIndex === 0} style={{ padding: '10px 20px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', opacity: currentHalachaIndex === 0 ? 0.5 : 1 }}>הלכות קודמות</button>
         <button onClick={handleDownload} style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הורד וסמן כנקרא</button>
         <button onClick={handleDownloadOnly} style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הורד בלבד</button>
-        <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden' }}>
-          <button onClick={loadNextHalachot} style={{ padding: '10px 16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', cursor: 'pointer', fontSize: '14px' }}>הלכות הבאות</button>
-          <button onClick={loadNextHalachot10} style={{ padding: '10px 12px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRight: '1px solid rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '13px' }}>»10</button>
-        </div>
+        <button onClick={loadNextHalachot} style={{ padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הלכות הבאות</button>
       </div>
     </div>
   );
