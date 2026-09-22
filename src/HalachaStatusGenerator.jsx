@@ -84,14 +84,16 @@ const btnBase = {
 
 const stepperButtonStyle = { ...btnBase, width: '28px', height: '28px', fontSize: '16px' };
 
-function Stepper({ label, value, onDec, onInc, suffix }) {
+function Stepper({ label, value, onDec, onInc, onDecLarge, onIncLarge, suffix }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '6px 10px', backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '6px' }}>
       <span style={{ fontSize: '13px', color: '#333' }}>{label}</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        {onDecLarge && <button onClick={onDecLarge} style={{ ...stepperButtonStyle, width: '34px', fontSize: '12px', color: '#666' }}>−10</button>}
         <button onClick={onDec} style={stepperButtonStyle}>−</button>
         <span style={{ minWidth: '28px', textAlign: 'center', fontWeight: 'bold', fontSize: '14px' }}>{value}</span>
         <button onClick={onInc} style={stepperButtonStyle}>+</button>
+        {onIncLarge && <button onClick={onIncLarge} style={{ ...stepperButtonStyle, width: '34px', fontSize: '12px', color: '#666' }}>+10</button>}
         {suffix && <span style={{ color: '#888', fontSize: '12px', minWidth: '38px' }}>{suffix}</span>}
       </div>
     </div>
@@ -507,6 +509,8 @@ function HalachaStatusGenerator() {
             value={stepSize}
             onDec={() => setStepSize((s) => Math.max(s - 1, 1))}
             onInc={() => setStepSize((s) => s + 1)}
+            onDecLarge={() => setStepSize((s) => Math.max(s - 10, 1))}
+            onIncLarge={() => setStepSize((s) => s + 10)}
           />
           <Stepper
             label="מחיקת אות סעיף"
