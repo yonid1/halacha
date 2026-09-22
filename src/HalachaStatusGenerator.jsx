@@ -21,20 +21,16 @@ const HebrewUtils = {
   gematriyaDay: (day) => {
     if (day === 15) return 'טו';
     if (day === 16) return 'טז';
-
     const tens = Math.floor(day / 10) * 10;
     const ones = day % 10;
-
     let hebrewTens = '';
     let hebrewOnes = '';
-
     switch (tens) {
       case 10: hebrewTens = 'י'; break;
       case 20: hebrewTens = 'כ'; break;
       case 30: hebrewTens = 'ל'; break;
       default: hebrewTens = '';
     }
-
     switch (ones) {
       case 1: hebrewOnes = 'א'; break;
       case 2: hebrewOnes = 'ב'; break;
@@ -47,7 +43,6 @@ const HebrewUtils = {
       case 9: hebrewOnes = 'ט'; break;
       default: hebrewOnes = '';
     }
-
     return hebrewTens + hebrewOnes;
   },
 
@@ -59,12 +54,10 @@ const HebrewUtils = {
       50: 'נ', 60: 'ס', 70: 'ע', 80: 'פ', 90: 'צ',
       100: 'ק', 200: 'ר', 300: 'ש', 400: 'ת'
     };
-
     const tens = Math.floor((year % 100) / 10);
     const ones = year % 10;
     const tensLetter = hebrewLetters[tens * 10] || '';
     const onesLetter = hebrewLetters[ones] || '';
-
     return `ה'תש${tensLetter}${onesLetter}`;
   },
 
@@ -83,11 +76,13 @@ const calculateFontSize = (texts) => {
   return maxLength <= 200 ? baseSize : Math.max(16, baseSize - Math.floor((maxLength - 200) / 20));
 };
 
-const stepperButtonStyle = {
-  width: '28px', height: '28px', border: '1px solid #ccc', borderRadius: '4px',
-  backgroundColor: '#fff', cursor: 'pointer', fontSize: '16px', lineHeight: 1,
+const btnBase = {
+  border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff',
+  cursor: 'pointer', lineHeight: 1,
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
 };
+
+const stepperButtonStyle = { ...btnBase, width: '28px', height: '28px', fontSize: '16px' };
 
 function Stepper({ label, value, onDec, onInc, suffix }) {
   return (
@@ -103,7 +98,154 @@ function Stepper({ label, value, onDec, onInc, suffix }) {
   );
 }
 
+function BrowseScreen({ onSelectForCard, onBack }) {
+  const [browseCategory, setBrowseCategory] = useState('הלכות חנוכה');
+  const [browsePartNumber, setBrowsePartNumber] = useState(1);
+  const [browseFilter, setBrowseFilter] = useState('all');
+  const [allHalachot, setAllHalachot] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selected, setSelected] = useState(new Set());
+
+  useEffect(() => {
+    const load = async () => {
+      setIsLoading(true);
+      setSelected(new Set());
+      try {
+        const docRef = browseCategory === 'הלכות שבת'
+          ? doc(db, 'halachot', `${browseCategory}_${browsePartNumber}`)
+          : doc(db, 'halachot', browseCategory);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          setAllHalachot(snap.data().halachot || []);
+        } else {
+          setAllHalachot([]);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
+  }, [browseCategory, browsePartNumber]);
+
+  const filtered = useMemo(() => {
+    if (browseFilter === 'all') return allHalachot;
+    if (browseFilter === 'unread') return allHalachot.filter((h) => !h.read);
+    return allHalachot.filter((h) => h.read);
+  }, [allHalachot, browseFilter]);
+
+  const toggleSelect = (id) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSendToCard = () => {
+    const chosen = filtered.filter((h) => selected.has(h.id));
+    if (chosen.length > 0) onSelectForCard(chosen);
+  };
+
+  const filterLabels = { all: 'הכל', unread: 'לא נקראו', read: 'נקראו' };
+
+  return (
+    <div style={{ padding: '16px', direction: 'rtl', maxWidth: '640px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+        <button onClick={onBack} style={{ ...btnBase, padding: '7px 14px', fontSize: '14px' }}>← חזור</button>
+        <h2 style={{ margin: 0, fontSize: '18px' }}>עיון בהלכות</h2>
+        {selected.size > 0 && (
+          <button
+            onClick={handleSendToCard}
+            style={{ marginRight: 'auto', padding: '7px 14px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}
+          >
+            שמור לכרטיס ({selected.size})
+          </button>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+        <select
+          value={browseCategory}
+          onChange={(e) => { setBrowseCategory(e.target.value); setBrowsePartNumber(1); }}
+          style={{ flex: 1, padding: '8px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }}
+        >
+          {Object.keys(CATEGORIES).map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+        {browseCategory === 'הלכות שבת' && (
+          <select
+            value={browsePartNumber}
+            onChange={(e) => setBrowsePartNumber(Number(e.target.value))}
+            style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }}
+          >
+            {[...Array(CATEGORIES[browseCategory].parts)].map((_, i) => (
+              <option key={i + 1} value={i + 1}>{`חלק ${HebrewUtils.gematriyaDay(i + 1)}`}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+        {Object.entries(filterLabels).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setBrowseFilter(key)}
+            style={{
+              flex: 1, padding: '7px', fontSize: '13px', borderRadius: '6px', cursor: 'pointer',
+              border: '1px solid ' + (browseFilter === key ? '#007bff' : '#ccc'),
+              backgroundColor: browseFilter === key ? '#007bff' : '#fff',
+              color: browseFilter === key ? 'white' : '#333',
+              fontWeight: browseFilter === key ? 'bold' : 'normal'
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <div style={{ textAlign: 'center', padding: '20px', color: '#888' }}>טוען...</div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '20px', color: '#888' }}>לא נמצאו הלכות</div>
+      ) : (
+        <div>
+          {filtered.map((h) => {
+            const isSelected = selected.has(h.id);
+            return (
+              <div
+                key={h.id}
+                onClick={() => toggleSelect(h.id)}
+                style={{
+                  padding: '12px 14px', marginBottom: '8px', borderRadius: '8px', cursor: 'pointer',
+                  border: '2px solid ' + (isSelected ? '#007bff' : '#e5e7eb'),
+                  backgroundColor: isSelected ? '#e8f0fe' : '#fff',
+                  transition: 'all 0.15s'
+                }}
+              >
+                <p style={{ margin: 0, fontSize: '15px', lineHeight: '1.6', textAlign: 'justify' }}>{h.text}</p>
+                <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', color: '#aaa' }}>#{h.id}</span>
+                  <span style={{ fontSize: '12px', color: h.read ? '#28a745' : '#dc3545', fontWeight: 'bold' }}>
+                    {h.read ? '✓ נקרא' : '● לא נקרא'}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function HalachaStatusGenerator() {
+  const [screen, setScreen] = useState('generator');
+  const [pinnedHalachot, setPinnedHalachot] = useState(null);
+
   const [category, setCategory] = useState('הלכות חנוכה');
   const [partNumber, setPartNumber] = useState(1);
   const [viewMode, setViewMode] = useState('unread');
@@ -147,39 +289,30 @@ function HalachaStatusGenerator() {
   }, []);
 
   const loadHalachot = async () => {
+    if (pinnedHalachot) return;
     setIsLoading(true);
     setError(null);
     try {
-      const docRef =
-        category === 'הלכות שבת'
-          ? doc(db, 'halachot', `${category}_${partNumber}`)
-          : doc(db, 'halachot', category);
+      const docRef = category === 'הלכות שבת'
+        ? doc(db, 'halachot', `${category}_${partNumber}`)
+        : doc(db, 'halachot', category);
 
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const allHalachot = docSnap.data().halachot || [];
-        const filteredHalachot =
-          viewMode === 'unread'
-            ? allHalachot.filter((h) => !h.read)
-            : allHalachot.filter((h) => h.read);
+        const filteredHalachot = viewMode === 'unread'
+          ? allHalachot.filter((h) => !h.read)
+          : allHalachot.filter((h) => h.read);
 
         const collected = filteredHalachot.slice(currentHalachaIndex, currentHalachaIndex + halachotCount);
 
         if (collected.length === 0) {
-          setError(
-            viewMode === 'unread'
-              ? 'לא נמצאו הלכות בקטגוריה זו'
-              : 'לא נמצאו הלכות שנקראו בקטגוריה זו'
-          );
+          setError(viewMode === 'unread' ? 'לא נמצאו הלכות בקטגוריה זו' : 'לא נמצאו הלכות שנקראו בקטגוריה זו');
         } else {
           setHalachot(collected);
         }
       } else {
-        setError(
-          viewMode === 'unread'
-            ? 'לא נמצאו הלכות בקטגוריה זו'
-            : 'לא נמצאו הלכות שנקראו בקטגוריה זו'
-        );
+        setError(viewMode === 'unread' ? 'לא נמצאו הלכות בקטגוריה זו' : 'לא נמצאו הלכות שנקראו בקטגוריה זו');
       }
     } catch (err) {
       setError('שגיאה בטעינת ההלכות');
@@ -191,18 +324,15 @@ function HalachaStatusGenerator() {
 
   const markAsRead = async (halachaIds) => {
     try {
-      const docRef =
-        category === 'הלכות שבת'
-          ? doc(db, 'halachot', `${category}_${partNumber}`)
-          : doc(db, 'halachot', category);
+      const docRef = category === 'הלכות שבת'
+        ? doc(db, 'halachot', `${category}_${partNumber}`)
+        : doc(db, 'halachot', category);
 
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const allHalachot = docSnap.data().halachot || [];
         const updatedHalachot = allHalachot.map((halacha) =>
-          halachaIds.includes(halacha.id)
-            ? { ...halacha, read: true }
-            : halacha
+          halachaIds.includes(halacha.id) ? { ...halacha, read: true } : halacha
         );
         await updateDoc(docRef, { halachot: updatedHalachot });
       }
@@ -221,11 +351,9 @@ function HalachaStatusGenerator() {
 
     try {
       const canvas = await html2canvas(cardElement, { useCORS: true, scale: 2 });
-
       const blob = await new Promise((resolve, reject) => {
         canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob returned null'))), 'image/png');
       });
-
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = 'halacha.png';
@@ -241,8 +369,8 @@ function HalachaStatusGenerator() {
 
   const handleDownload = async () => {
     try {
-      if (viewMode === 'unread') {
-        const halachaIds = halachot.map((halacha) => halacha.id);
+      if (!pinnedHalachot && viewMode === 'unread') {
+        const halachaIds = displayHalachot.map((h) => h.id);
         await markAsRead(halachaIds);
         await downloadCardAsImage();
         alert('ההלכות סומנו כנקראו והתמונה הורדה בהצלחה.');
@@ -265,29 +393,39 @@ function HalachaStatusGenerator() {
     }
   };
 
-  const loadNextHalachot = () => {
-    setCurrentHalachaIndex((prev) => prev + stepSize);
-  };
-
-  const loadPreviousHalachot = () => {
-    setCurrentHalachaIndex((prev) => Math.max(prev - stepSize, 0));
-  };
+  const loadNextHalachot = () => setCurrentHalachaIndex((prev) => prev + stepSize);
+  const loadPreviousHalachot = () => setCurrentHalachaIndex((prev) => Math.max(prev - stepSize, 0));
+  const loadNextHalachot10 = () => setCurrentHalachaIndex((prev) => prev + 10);
+  const loadPreviousHalachot10 = () => setCurrentHalachaIndex((prev) => Math.max(prev - 10, 0));
 
   const processText = (text) => {
     if (stripChars === 0) return text;
     return text.substring(stripChars).replace(/^[.\s]+/, '');
   };
 
-  const fontSize = useMemo(() => calculateFontSize(halachot.map((h) => h.text)) + fontSizeOffset, [halachot, fontSizeOffset]);
+  const displayHalachot = pinnedHalachot ?? halachot;
+  const fontSize = useMemo(
+    () => calculateFontSize(displayHalachot.length ? displayHalachot.map((h) => h.text) : ['']),
+    [displayHalachot]
+  ) + fontSizeOffset;
 
   useEffect(() => {
     loadHalachot();
-  }, [category, partNumber, currentHalachaIndex, halachotCount, viewMode]);
+  }, [category, partNumber, currentHalachaIndex, halachotCount, viewMode, pinnedHalachot]);
 
   const switchViewMode = (mode) => {
     setViewMode(mode);
     setCurrentHalachaIndex(0);
   };
+
+  if (screen === 'browse') {
+    return (
+      <BrowseScreen
+        onSelectForCard={(chosen) => { setPinnedHalachot(chosen); setScreen('generator'); }}
+        onBack={() => setScreen('generator')}
+      />
+    );
+  }
 
   return (
     <div style={{ padding: '16px', margin: '0 auto', direction: 'rtl', maxWidth: '640px' }}>
@@ -319,7 +457,28 @@ function HalachaStatusGenerator() {
           >
             הלכות שנקראו
           </button>
+          <button
+            onClick={() => setScreen('browse')}
+            style={{
+              padding: '8px 12px', backgroundColor: '#fff', color: '#333',
+              border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', fontSize: '14px'
+            }}
+          >
+            עיון
+          </button>
         </div>
+
+        {pinnedHalachot && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', backgroundColor: '#fff3cd', border: '1px solid #ffc107', borderRadius: '6px', marginBottom: '10px', fontSize: '13px' }}>
+            <span>מוצגות {pinnedHalachot.length} הלכות שנבחרו מעיון</span>
+            <button
+              onClick={() => setPinnedHalachot(null)}
+              style={{ padding: '3px 8px', backgroundColor: '#ffc107', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+            >
+              נקה
+            </button>
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
           <select value={category} onChange={(e) => { setCategory(e.target.value); setCurrentHalachaIndex(0); }} style={{ flex: 1, padding: '8px', border: '1px solid #ccc', borderRadius: '6px', backgroundColor: '#fff', fontSize: '14px' }}>
@@ -366,16 +525,16 @@ function HalachaStatusGenerator() {
       </div>
 
       <div style={{ width: `${420 * cardScale}px`, height: `${750 * cardScale}px`, margin: '0 auto' }}>
-        <div id="halacha-card" style={{ width: '420px', height: '750px', transform: `scale(${cardScale})`, transformOrigin: 'top right', backgroundColor: '#FFEFD5', backgroundRepeat: 'no-repeat', backgroundPosition: 'left  bottom', backgroundSize: '200px', backgroundImage: `url(${ori})`, padding: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', color: 'black', fontFamily: "'David Libre', serif", boxShadow: '0 2px 4px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
-          {isLoading ? (
+        <div id="halacha-card" style={{ width: '420px', height: '750px', transform: `scale(${cardScale})`, transformOrigin: 'top right', backgroundColor: '#FFEFD5', backgroundRepeat: 'no-repeat', backgroundPosition: 'left bottom', backgroundSize: '200px', backgroundImage: `url(${ori})`, padding: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', color: 'black', fontFamily: "'David Libre', serif", boxShadow: '0 2px 4px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+          {isLoading && !pinnedHalachot ? (
             <div>טוען הלכות...</div>
-          ) : error ? (
+          ) : error && !pinnedHalachot ? (
             <div style={{ color: 'red' }}>{error}</div>
           ) : (
             <>
               <div style={{ flex: 1 }}>
                 <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>{hebrewDate.dayOfWeek}, {hebrewDate.hebrewDate}<br />{category}</h2>
-                {halachot.map((halacha) => (
+                {displayHalachot.map((halacha) => (
                   <p key={halacha.id} style={{ fontSize: `${fontSize}px`, lineHeight: '1.6', marginBottom: '15px', textAlign: 'justify' }}>{processText(halacha.text)}</p>
                 ))}
               </div>
@@ -385,11 +544,13 @@ function HalachaStatusGenerator() {
         </div>
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '10px' }}>
-        <button onClick={loadPreviousHalachot} style={{ padding: '10px 20px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }} disabled={currentHalachaIndex === 0}>הלכות קודמות</button>
+      <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '8px' }}>
+        <button onClick={loadPreviousHalachot10} disabled={currentHalachaIndex === 0} style={{ padding: '10px 14px', backgroundColor: '#c62828', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', opacity: currentHalachaIndex === 0 ? 0.5 : 1 }}>10«</button>
+        <button onClick={loadPreviousHalachot} disabled={currentHalachaIndex === 0} style={{ padding: '10px 20px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', opacity: currentHalachaIndex === 0 ? 0.5 : 1 }}>הלכות קודמות</button>
         <button onClick={handleDownload} style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הורד וסמן כנקרא</button>
         <button onClick={handleDownloadOnly} style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הורד בלבד</button>
         <button onClick={loadNextHalachot} style={{ padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>הלכות הבאות</button>
+        <button onClick={loadNextHalachot10} style={{ padding: '10px 14px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>»10</button>
       </div>
     </div>
   );
